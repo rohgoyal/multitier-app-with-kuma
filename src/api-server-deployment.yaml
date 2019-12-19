@@ -1,17 +1,20 @@
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-app
+  name: api-server
 spec:
+  selector:
+    matchLabels:
+      app: api-server
   replicas: 1
   template:
     metadata:
       labels:
-        app: test-app
+        app: api-server
     spec:
       containers:
-      - name: test-app
-        image: ajaynemade/pymy:latest
+      - name: api-server
+        image: api-server:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5000

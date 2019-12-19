@@ -1,8 +1,13 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql
+  labels: 
+    app: mysql
 spec:
+  selector:
+    matchLabels:
+      app: mysql
   template:
     metadata:
       labels:
@@ -13,9 +18,11 @@ spec:
         - name: MYSQL_DATABASE
           value: admin
         - name: MYSQL_ROOT_PASSWORD
-          value: admin
+          value: password
         image: mysql:latest
         name: mysql
+        args:
+            - "--default-authentication-plugin=mysql_native_password"
         ports:
         - name: mysqlport
           containerPort: 3306

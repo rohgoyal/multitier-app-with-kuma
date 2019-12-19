@@ -6,7 +6,7 @@ with MySQL database running as another container using service name
 
 from flask import Flask, request
 app = Flask(__name__)
-import MySQLdb
+import mysql.connector as mysql
 conn = ""
 
 
@@ -16,8 +16,7 @@ def get_db_conn(host, user, passwd, db):
     """
 
     global conn
-    if not conn.open:
-        conn = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
+    conn = mysql.connect(host=host, user=user, passwd=passwd, db=db)
     return conn
 
 
@@ -28,16 +27,18 @@ def db_init(host, user, passwd, db):
 
     global conn
     try:
-        conn = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
-        cur=conn.cursor()
+        conn = mysql.connect(host=host, user=user, passwd=passwd, db=db)
+        cur=conn.cursor(buffered=True)
         cur.execute("show tables like 'employee'")
-        if not cur.rowcount:
+        print ("Row Count %s" %cur.rowcount)
+        if cur.rowcount <= 0:
+            print ("Creating Table")
             cur.execute("create table employee(id int, name varchar(20))")
             conn.commit()
         else:
-            print "Database table already present"
+            print("Database table already present")
     except Exception as msg:
-        print "Exception while initializing database : %s"%msg
+        print ("Exception while initializing database : %s" %(msg))
 
 
 @app.route('/')
@@ -46,36 +47,36 @@ def greet():
     Greet to visitors of url http://IP:5000/
     """
 
-    return 'Valar Morghulis!!'
+    return 'Healthy API Server'
 
 
-@app.route("/storedata", methods=["POST"])
+@app.route("/employees", methods=["POST"])
 def store_data():
     """
     Store the employee data in database and return msg
     """
 
     try:
-        conn = get_db_conn(host="mysql-service.default", user="root", passwd="admin", db="admin")
-        cur = conn.cursor()
+        conn = get_db_conn(host="mysql", user="root", passwd="password", db="admin")
+        cur = conn.cursor(buffered=True)
         cur.execute("insert into employee values (%s, '%s')"%(request.form['id'], request.form['name']))
         conn.commit()
         msg = "Inserted Data for Employee : %s"%(request.form['name'])
     except Exception as msg:
-        print "Exception : %s"%(msg)
+        print ("Exception : %s"%msg)
         msg = "Exception while inserting data %s"%(msg)
     return msg
 
 
-@app.route("/getdata/<int:id>", methods=["GET"])
+@app.route("/employees/<int:id>", methods=["GET"])
 def get_data(id):
     """
     Get Employee data using Employee ID
     """
 
     try:
-        conn = get_db_conn(host="mysql-service.default", user="root", passwd="admin", db="admin")
-        cur = conn.cursor()
+        conn = get_db_conn(host="mysql", user="root", passwd="password", db="admin")
+        cur = conn.cursor(buffered=True)
         cur.execute("select * from employee where id=%d"%id)
         if cur.rowcount:
             res = cur.fetchone()
@@ -83,11 +84,11 @@ def get_data(id):
         else:
             msg = "Data for Employee ID : %d not present"%(id)
     except Exception as msg:
-        print "Exception : %s"%(msg)
+        print ("Exception : %s"%msg)
         msg = "Exception while fetching data %s"%(msg)
     return msg
 
 
 if __name__ == '__main__':
-    db_init(host="mysql-service.default", user="root", passwd="admin", db="admin")
+    db_init(host="mysql", user="root", passwd="password", db="admin")
     app.run(host="0.0.0.0", port=5000)
